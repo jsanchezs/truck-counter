@@ -1,0 +1,31 @@
+name: Update incident date to today
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update incident date and push
+        run: |
+          TODAY_ISO=$(date +%Y-%m-%d)
+          TODAY_DISPLAY=$(date +%d/%m/%Y)
+
+          # Update JS constant (YYYY-MM-DD)
+          sed -i "s/const lastIncident = \"[0-9-]*\"/const lastIncident = \"${TODAY_ISO}\"/" index.html
+
+          # Update display label (DD/MM/YYYY)
+          sed -i "s/incidencia: [0-9][0-9]\/[0-9][0-9]\/[0-9][0-9][0-9][0-9]/incidencia: ${TODAY_DISPLAY}/" index.html
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet && echo "Date already up to date, nothing to commit." || \
+            git commit -m "chore: update incident date to ${TODAY_ISO}"
+          git push
