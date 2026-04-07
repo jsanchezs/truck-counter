@@ -14,18 +14,28 @@ jobs:
 
       - name: Update incident date and push
         run: |
-          TODAY_ISO=$(date +%Y-%m-%d)
-          TODAY_DISPLAY=$(date +%d/%m/%Y)
+          python3 - <<'EOF'
+          import re, datetime
 
-          # Update JS constant (YYYY-MM-DD)
-          sed -i "s/const lastIncident = \"[0-9-]*\"/const lastIncident = \"${TODAY_ISO}\"/" index.html
+          today = datetime.date.today()
+          iso = today.strftime('%Y-%m-%d')
+          display = today.strftime('%d/%m/%Y')
 
-          # Update display label (DD/MM/YYYY)
-          sed -i "s/incidencia: [0-9][0-9]\/[0-9][0-9]\/[0-9][0-9][0-9][0-9]/incidencia: ${TODAY_DISPLAY}/" index.html
+          with open('index.html', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          content = re.sub(r'const lastIncident = "[^"]*"', f'const lastIncident = "{iso}"', content)
+          content = re.sub(r'incidencia: \d{2}/\d{2}/\d{4}', f'incidencia: {display}', content)
+
+          with open('index.html', 'w', encoding='utf-8') as f:
+              f.write(content)
+
+          print(f'Updated to {iso} ({display})')
+          EOF
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --staged --quiet && echo "Date already up to date, nothing to commit." || \
-            git commit -m "chore: update incident date to ${TODAY_ISO}"
+            git commit -m "chore: update incident date to $(date +%Y-%m-%d)"
           git push
